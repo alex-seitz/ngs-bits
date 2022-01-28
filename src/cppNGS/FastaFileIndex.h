@@ -28,23 +28,23 @@ public:
 	}
 
 	///Returns the chromosome names (normalized).
-	QStringList names() const
+	QByteArrayList names() const
 	{
 		return index_.keys();
 	}
 
 protected:
-	QString fasta_name_;
-	QString index_name_;
+	QByteArray fasta_name_;
+	QByteArray index_name_;
 	struct FastaIndexEntry
 	{
-		QString name;  ///< chromosome name (original string, i.e. not normalized)
+		QByteArray name;  ///< chromosome name (original string, i.e. not normalized)
 		int length;  ///< length of sequence
 		long long offset;  ///< bytes offset of sequence from start of file
 		int line_blen;  ///< line length in bytes, sequence characters
 		int line_len;  ///< line length including newline
 	};
-	QMap<QString, FastaIndexEntry> index_;
+	QMap<QByteArray, FastaIndexEntry> index_;
 	mutable QFile file_;
 	const FastaIndexEntry& index(const Chromosome& chr) const;
 	bool isFastaFileLocal() const;

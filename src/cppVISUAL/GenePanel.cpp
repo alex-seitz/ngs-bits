@@ -1,25 +1,19 @@
 #include "GenePanel.h"
 #include "Helper.h"
 #include "NGSHelper.h"
+#include "VisualizationServiceProvider.h"
 #include <QDebug>
 #include <QPainter>
 #include <QMenu>
 #include <QToolTip>
 
-GenePanel::GenePanel(QWidget *parent)
-	: QWidget(parent)
+GenePanel::GenePanel()
+	: Panel()
 	, settings_()
 {
 	setContextMenuPolicy(Qt::CustomContextMenu);
 	setMouseTracking(true);
 	connect(this, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextMenu(QPoint)));
-}
-
-void GenePanel::setDependencies(const FastaFileIndex& genome_idx, const TranscriptList& transcripts)
-{
-	genome_idx_ = &genome_idx;
-	transcripts_ = & transcripts;
-	transcripts_idx_ = new ChromosomalIndex<TranscriptList>(*transcripts_);
 }
 
 void GenePanel::setRegion(const BedLine& region)
@@ -63,9 +57,6 @@ void GenePanel::contextMenu(QPoint pos)
 
 void GenePanel::paintEvent(QPaintEvent* /*event*/)
 {
-	//check
-	if (genome_idx_==nullptr || transcripts_==nullptr) THROW(ProgrammingException, "Dependencies not set!");
-
 	//init
 	int h = height();
 	int w = width();
@@ -85,7 +76,7 @@ void GenePanel::paintEvent(QPaintEvent* /*event*/)
 	//paint sequence (only if at lest one pixel per base is available)
 	if (pixels_per_base_ >= 1)
 	{
-		Sequence seq = genome_idx_->seq(reg_.chr(), reg_.start(), reg_.length());
+		Sequence seq = VisualizationServiceProvider::genomeIndex().seq(reg_.chr(), reg_.start(), reg_.length());
 		if (!settings_.strand_forward) seq.complement();
 		painter.setPen(Qt::transparent);
 
@@ -144,19 +135,19 @@ void GenePanel::paintEvent(QPaintEvent* /*event*/)
 	trans_positions_.clear();
 
 	//paint preferred transcripts;
-	QVector<int> trans_indices = transcripts_idx_->matchingIndices(reg_.chr(), reg_.start(), reg_.end());
-	foreach(int i, trans_indices)
+	QByteArrayList trans_names = VisualizationServiceProvider::transcripts(reg_.chr(), reg_.start(), reg_.end());
+	foreach(const QByteArray& name, trans_names)
 	{
-		const Transcript& trans = transcripts_->at(i);
+		const Transcript& trans = VisualizationServiceProvider::transcript(name);
 		if (!trans.isPreferredTranscript()) continue;
 		if (trans.source()!=Transcript::ENSEMBL && settings_.show_only_ensembl) continue;
 		drawTranscript(painter, trans, y_content_start, QColor(130, 0, 50));
 	}
 
 	//paint other transcripts
-	foreach(int i, trans_indices)
+	foreach(const QByteArray& name, trans_names)
 	{
-		const Transcript& trans = transcripts_->at(i);
+		const Transcript& trans = VisualizationServiceProvider::transcript(name);
 		if (trans.isPreferredTranscript()) continue;
 		if (trans.source()!=Transcript::ENSEMBL && settings_.show_only_ensembl) continue;
 		drawTranscript(painter, trans, y_content_start, QColor(0, 0, 178));

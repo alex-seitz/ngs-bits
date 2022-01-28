@@ -3,9 +3,8 @@
 
 #include "cppVISUAL_global.h"
 #include "FastaFileIndex.h"
-#include "BedFile.h"
 #include "Transcript.h"
-#include <QWidget>
+#include "GenePanel.h"
 
 namespace Ui {
 class GenomeVisualizationWidget;
@@ -25,7 +24,7 @@ class CPPVISUALSHARED_EXPORT GenomeVisualizationWidget
 	Q_OBJECT
 
 public:
-	GenomeVisualizationWidget(QWidget* parent, const FastaFileIndex& genome_idx, const TranscriptList& transcripts);
+	GenomeVisualizationWidget(QWidget* parent);
 
 	//Sets visualized region (1-based)
 	void setRegion(const Chromosome& chr, int start, int end);
@@ -51,12 +50,6 @@ signals:
 private:
 	Ui::GenomeVisualizationWidget* ui_;
 	GenomeVisualizationSettings settings_;
-	const FastaFileIndex& genome_idx_;
-	const TranscriptList& transcripts_;
-
-	QStringList valid_chrs_; //chromosome list (normalized)
-	QHash<QByteArray, QSet<int>> gene_to_trans_indices_;
-	QHash<QByteArray, int> trans_to_index_;
 	BedLine current_reg_;
 };
 

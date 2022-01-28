@@ -1,42 +1,24 @@
-#include "ui_GenomeVisualizationWidget.h"
 #include "GenomeVisualizationWidget.h"
+#include "ui_GenomeVisualizationWidget.h"
+#include "VisualizationServiceProvider.h"
 #include "BedFile.h"
 #include "GUIHelper.h"
 #include <QToolTip>
 #include <QDebug>
 #include <QMessageBox>
 
-GenomeVisualizationWidget::GenomeVisualizationWidget(QWidget* parent, const FastaFileIndex& genome_idx, const TranscriptList& transcripts)
+GenomeVisualizationWidget::GenomeVisualizationWidget(QWidget* parent)
 	: QWidget(parent)
 	, ui_(new Ui::GenomeVisualizationWidget)
 	, settings_()
-	, genome_idx_(genome_idx)
-	, transcripts_(transcripts)
-	, valid_chrs_()
-	, gene_to_trans_indices_()
-	, trans_to_index_()
 	, current_reg_()
 {
 	ui_->setupUi(this);
-	GUIHelper::styleSplitter(ui_->splitter_gene_panel);
-
-	//init panels
-	ui_->gene_panel->setDependencies(genome_idx_, transcripts_);
 
 	//init chromosome list (ordered correctly)
-	valid_chrs_ = genome_idx_.names();
-	std::sort(valid_chrs_.begin(), valid_chrs_.end(), [](const QString& s1, const QString& s2){ Chromosome c1(s1); Chromosome c2(s2); return (c1.num()<1004 || c2.num()<1004) ? c1<c2 : s1<s2;  });
-	ui_->chr_selector->addItems(valid_chrs_);
-
-	//init gene and transcript list
-	for(int i=0; i<transcripts_.size(); ++i)
+	foreach(QByteArray chr, VisualizationServiceProvider::validChromosomes())
 	{
-		const Transcript& trans = transcripts_[i];
-
-		if (trans.source()!=Transcript::ENSEMBL) continue;
-
-		gene_to_trans_indices_[trans.gene()] << i;
-		trans_to_index_[trans.name()] = i;
+		ui_->chr_selector->addItem(chr);
 	}
 
 	//connect signals and slots
@@ -45,8 +27,12 @@ GenomeVisualizationWidget::GenomeVisualizationWidget(QWidget* parent, const Fast
 	connect(ui_->zoomin_btn, SIGNAL(clicked(bool)), this, SLOT(zoomIn()));
 	connect(ui_->zoomout_btn, SIGNAL(clicked(bool)), this, SLOT(zoomOut()));
 	connect(this, SIGNAL(regionChanged(BedLine)), this, SLOT(updateRegionWidgets(BedLine)));
-	connect(this, SIGNAL(regionChanged(BedLine)), ui_->gene_panel, SLOT(setRegion(BedLine)));
-	connect(ui_->gene_panel, SIGNAL(mouseCoordinate(QString)), this, SLOT(updateCoordinateLabel(QString)));
+	connect(this, SIGNAL(regionChanged(BedLine)), ui_->panel_stack, SLOT(setRegion(BedLine)));
+	connect(ui_->panel_stack, SIGNAL(mouseCoordinate(QString)), this, SLOT(updateCoordinateLabel(QString)));
+
+	//add gene panel
+	GenePanel* gene_panel = new GenePanel();
+	ui_->panel_stack->appendPanel(gene_panel);
 }
 
 void GenomeVisualizationWidget::setRegion(const Chromosome& chr, int start, int end)
@@ -72,9 +58,9 @@ void GenomeVisualizationWidget::setRegion(const Chromosome& chr, int start, int 
 		start = 1;
 		end = start + size - 1;
 	}
-	if (end>genome_idx_.lengthOf(chr))
+	if (end>VisualizationServiceProvider::genomeIndex().lengthOf(chr))
 	{
-		end = genome_idx_.lengthOf(chr);
+		end = VisualizationServiceProvider::genomeIndex().lengthOf(chr);
 		start = end - size + 1;
 		if (start<1) start = 1; //if size is bigger than chromosome, this can happen
 	}
@@ -95,15 +81,15 @@ void GenomeVisualizationWidget::setChromosomeRegion(QString chr)
 		QMessageBox::warning(this, __FUNCTION__, "Could not convert chromosome string '" + chr + "' to valid chromosome!");
 	}
 
-	setRegion(chr, 1, genome_idx_.lengthOf(c));
+	setRegion(chr, 1, VisualizationServiceProvider::genomeIndex().lengthOf(c));
 }
 
 void GenomeVisualizationWidget::search()
 {
-	QString text = ui_->search->text().trimmed();
+	QByteArray text = ui_->search->text().trimmed().toLatin1();
 
 	//chromosome
-	if (valid_chrs_.contains(text) || (!text.startsWith("chr") && valid_chrs_.contains("chr"+text)))
+	if (VisualizationServiceProvider::validChromosomes().contains(text) || (!text.startsWith("chr") && VisualizationServiceProvider::validChromosomes().contains("chr"+text)))
 	{
 		setChromosomeRegion(text);
 		return;
@@ -118,12 +104,12 @@ void GenomeVisualizationWidget::search()
 	}
 
 	//gene
-	if (gene_to_trans_indices_.contains(text.toLatin1()))
+	if (VisualizationServiceProvider::isGeneName(text))
 	{
 		BedFile roi;
-		foreach(int index, gene_to_trans_indices_[text.toLatin1()])
+		foreach(const QByteArray& name, VisualizationServiceProvider::geneTranscripts(text))
 		{
-			const Transcript& trans = transcripts_[index];
+			const Transcript& trans = VisualizationServiceProvider::transcript(name);
 			roi.append(BedLine(trans.chr(), trans.start(), trans.end()));
 		}
 		roi.extend(settings_.transcript_padding);
@@ -138,10 +124,9 @@ void GenomeVisualizationWidget::search()
 	}
 
 	//transcript
-	if (trans_to_index_.contains(text.toLatin1()))
+	if (VisualizationServiceProvider::isTranscriptName(text))
 	{
-		int index = trans_to_index_[text.toLatin1()];
-		const Transcript& trans = transcripts_[index];
+		const Transcript& trans = VisualizationServiceProvider::transcript(text);
 		setRegion(trans.chr(), trans.start()-settings_.transcript_padding, trans.end()+settings_.transcript_padding);
 		return;
 	}

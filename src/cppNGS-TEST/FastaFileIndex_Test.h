@@ -77,7 +77,7 @@ private slots:
 	void names()
 	{
 		FastaFileIndex index(TESTDATA("data_in/example.fa"));
-		QList<QString> names = index.names();
+		QByteArrayList names = index.names();
 		I_EQUAL(names.count(), 4);
 		S_EQUAL(names[0], QString("chr14"));
 		S_EQUAL(names[1], QString("chr15"));

@@ -129,6 +129,7 @@ QT_CHARTS_USE_NAMESPACE
 #include "BlatWidget.h"
 #include "FusionWidget.h"
 #include "CohortExpressionDataWidget.h"
+#include "VisualizationServiceProvider.h"
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
@@ -5441,8 +5442,11 @@ void MainWindow::contextMenuSingleVariant(QPoint pos, int index)
 	}
 	else if (action==a_visual)
 	{
-		FastaFileIndex genome_idx(Settings::string("reference_genome", false));
-		GenomeVisualizationWidget* widget = new GenomeVisualizationWidget(this, genome_idx, NGSD().transcripts());
+		//init service provider //TODO do this only once
+		VisualizationServiceProvider::setGenomeFile(Settings::string("reference_genome", false));
+		VisualizationServiceProvider::setTranscriptList(NGSD().transcripts());
+
+		GenomeVisualizationWidget* widget = new GenomeVisualizationWidget(this);
 		widget->setRegion(variant.chr(), variant.start(), variant.end());
 		auto dlg = GUIHelper::createDialog(widget, "GSvar Genome Viewer");
 		dlg->exec();

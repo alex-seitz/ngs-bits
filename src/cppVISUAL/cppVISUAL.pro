@@ -39,12 +39,18 @@ LIBS += -lz
 QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
 
 SOURCES += \
-    GenomeVisualizationWidget.cpp \
-    GenePanel.cpp
+    VisualizationServiceProvider.cpp \
+    PanelStack.cpp \
+    GenePanel.cpp \
+    GenomeVisualizationWidget.cpp
 
 HEADERS += \
-    GenomeVisualizationWidget.h \
-    GenePanel.h
+    VisualizationServiceProvider.h \
+    Panel.h \
+    PanelStack.h \
+    GenePanel.h \
+    GenomeVisualizationWidget.h
 
 FORMS += \
+    PanelStack.ui \
     GenomeVisualizationWidget.ui

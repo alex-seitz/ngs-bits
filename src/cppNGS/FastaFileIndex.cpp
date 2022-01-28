@@ -3,15 +3,14 @@
 #include "Helper.h"
 #include "Log.h"
 #include <QRegExp>
-#include <QStringList>
 #include "HttpRequestHandler.h"
 
 using namespace std;
 
 FastaFileIndex::FastaFileIndex(QString fasta_file)
-	: fasta_name_(fasta_file)
-	, index_name_(fasta_file + ".fai")
-	, file_(fasta_file)
+	: fasta_name_(fasta_file.toLatin1())
+	, index_name_(fasta_file.toLatin1() + ".fai")
+	, file_(fasta_file.toLatin1())
 {
 	if (!isFastaFileLocal())
 	{
@@ -161,7 +160,7 @@ Sequence FastaFileIndex::seq(const Chromosome& chr, int start, int length, bool 
 
 const FastaFileIndex::FastaIndexEntry& FastaFileIndex::index(const Chromosome& chr) const
 {
-	QMap<QString, FastaIndexEntry>::const_iterator it = index_.find(chr.strNormalized(true));
+	QMap<QByteArray, FastaIndexEntry>::const_iterator it = index_.find(chr.strNormalized(true));
 	if(it==index_.cend())
 	{
 		THROW(ArgumentException, "Unknown FASTA index chromosome '" + chr.strNormalized(true) + "' requested!");
@@ -171,7 +170,7 @@ const FastaFileIndex::FastaIndexEntry& FastaFileIndex::index(const Chromosome& c
 
 bool FastaFileIndex::isFastaFileLocal() const
 {
-	return !fasta_name_.startsWith("http", Qt::CaseInsensitive);
+	return !fasta_name_.toLower().startsWith("http");
 }
 
 void FastaFileIndex::saveEntryToIndex(const QList<QByteArray>& fields)
@@ -182,6 +181,6 @@ void FastaFileIndex::saveEntryToIndex(const QList<QByteArray>& fields)
 	entry.offset = fields[2].toLongLong();
 	entry.line_blen = fields[3].toInt();
 	entry.line_len = fields[4].toInt();
-	QString name_norm = Chromosome(fields[0]).strNormalized(true);
+	QByteArray name_norm = Chromosome(fields[0]).strNormalized(true);
 	index_[name_norm] = entry;
 }
