@@ -5,7 +5,7 @@ QT += sql
 
 QTPLUGIN += QSQLMYSQL
 
-CONFIG += c++11 console
+CONFIG += c++14 console
 CONFIG -= app_bundle
 
 # The following define makes your compiler emit warnings if you use
@@ -48,6 +48,9 @@ LIBS += -L$$PWD/../bin -lcppNGSD
 #include REST library
 INCLUDEPATH += $$PWD/../cppREST
 LIBS += -L$$PWD/../bin -lcppREST
+
+INCLUDEPATH += $$PWD/../../aws-sdk/include
+LIBS += -L$$PWD/../../aws-sdk/lib64 -laws-cpp-sdk-core -laws-cpp-sdk-s3
 
 RESOURCES += \
     GSvarServer.qrc

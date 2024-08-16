@@ -6,6 +6,46 @@
 #include "ServerHelper.h"
 #include "ServerController.h"
 
+
+#include <aws/core/Aws.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/GetObjectRequest.h>
+#include <aws/s3/model/HeadObjectRequest.h>
+#include <QFile>
+#include <QDebug>
+#include <fstream>
+
+
+void readS3File(const Aws::String& bucket_name, const Aws::String& object_key, const QString& local_file_path) {
+    Aws::Client::ClientConfiguration clientConfig;
+    Aws::S3::S3Client s3_client(clientConfig);
+
+    // Aws::S3::Model::GetObjectRequest object_request;
+    Aws::S3::Model::HeadObjectRequest object_request;
+    object_request.SetBucket(bucket_name);
+    object_request.SetKey(object_key);
+
+    // auto get_object_outcome = s3_client.GetObject(object_request);
+    auto get_object_outcome = s3_client.HeadObject(object_request);
+    get_object_outcome.IsSuccess();
+    if (get_object_outcome.IsSuccess()) {
+        // auto& retrieved_file = get_object_outcome.GetResultWithOwnership().GetBody();
+
+        // std::ofstream output_file(local_file_path.toStdString(), std::ios::binary);
+        // if (output_file) {
+        //     output_file << retrieved_file.rdbuf();  // Write the file content to the local file
+        //     output_file.close();
+        //     qDebug() << "File downloaded successfully to:" << local_file_path;
+        // } else {
+        //     qWarning() << "Failed to open local file for writing.";
+        // }
+        return;
+    } else {
+        qWarning() << "Failed to download file from S3. Error:" << QString::fromStdString(get_object_outcome.GetError().GetMessage());
+    }
+}
+
+
 int main(int argc, char **argv)
 {
 	QCoreApplication app(argc, argv);
@@ -594,6 +634,23 @@ int main(int argc, char **argv)
         }
         SessionManager::addNewSession(restored_sessions[s]);
     }
+
+    Aws::SDKOptions options;
+
+    QTime timer;
+    timer.start();
+    Log::info("Starting the download");
+    Aws::InitAPI(options);
+    {
+        // Replace with your bucket name and object key
+        const Aws::String bucket_name = "gsvars3storage";
+        const Aws::String object_key = "test/KontrollDNACoriell/Sample_NA12878_58/NA12878_58.cram";
+        const QString local_file_path = "/home/ubuntolog/58.cram.txt";
+
+        readS3File(bucket_name, object_key, local_file_path);
+    }
+    Log::info("S3 download time: " + Helper::elapsedTime(timer, true));
+    Aws::ShutdownAPI(options);
 
 	return app.exec();
 }
