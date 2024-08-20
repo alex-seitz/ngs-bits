@@ -100,7 +100,8 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
 
     // quint64 file_size = QFile(filename).size();
 
-
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
     Aws::Client::ClientConfiguration clientConfig;
     Aws::S3::S3Client s3_client(clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;

@@ -469,6 +469,8 @@ void RequestWorker::sendEntireResponse(QSslSocket* socket, const HttpResponse& r
 
 bool RequestWorker::fileInS3BucketExists(const Aws::String& bucket_name, const Aws::String& object_key)
 {
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
     Aws::Client::ClientConfiguration clientConfig;
     Aws::S3::S3Client s3_client(clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
@@ -487,6 +489,8 @@ bool RequestWorker::fileInS3BucketExists(const Aws::String& bucket_name, const A
 
 long long RequestWorker::getS3BucketFileSize(const Aws::String& bucket_name, const Aws::String& object_key)
 {
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
     Aws::Client::ClientConfiguration clientConfig;
     Aws::S3::S3Client s3_client(clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
@@ -506,6 +510,8 @@ void RequestWorker::getS3BucketFileInChunks(const Aws::String& bucket_name, cons
 {
     std::size_t chunk_size = STREAM_CHUNK_SIZE;
 
+    Aws::SDKOptions options;
+    Aws::InitAPI(options);
     Aws::Client::ClientConfiguration clientConfig;
     Aws::S3::S3Client s3_client(clientConfig);
 
