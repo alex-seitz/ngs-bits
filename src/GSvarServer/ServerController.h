@@ -24,7 +24,6 @@
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/s3/model/HeadObjectRequest.h>
 #include <QFile>
-#include <QDebug>
 #include <fstream>
 
 struct SampleMetadata
