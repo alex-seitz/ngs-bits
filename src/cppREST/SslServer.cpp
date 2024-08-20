@@ -63,7 +63,7 @@ void SslServer::incomingConnection(qintptr socket)
 {
     try
     {
-        RequestWorker *request_worker = new RequestWorker(current_ssl_configuration_, socket, worker_params_);
+        RequestWorker *request_worker = new RequestWorker(current_ssl_configuration_, socket, worker_params_, true);
         thread_pool_.start(request_worker);
     }
     catch (...)

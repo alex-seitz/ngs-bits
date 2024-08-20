@@ -49,7 +49,7 @@ LIBS += -L$$PWD/../bin -lcppNGSD
 INCLUDEPATH += $$PWD/../cppREST
 LIBS += -L$$PWD/../bin -lcppREST
 
-INCLUDEPATH += $$PWD/../../aws-sdk/include
+INCLUDEPATH += $$PWD/../../aws-sdk/include/
 LIBS += -L$$PWD/../../aws-sdk/lib64 -laws-cpp-sdk-core -laws-cpp-sdk-s3
 
 RESOURCES += \

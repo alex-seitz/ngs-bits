@@ -98,7 +98,23 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
         return HttpResponse(ResponseStatus::NOT_FOUND, request.getContentType(), EndpointManager::formatResponseMessage(request, "Requested file could not be found"));
 	}
 
-	quint64 file_size = QFile(filename).size();
+    // quint64 file_size = QFile(filename).size();
+
+
+    Aws::Client::ClientConfiguration clientConfig;
+    Aws::S3::S3Client s3_client(clientConfig);
+    Aws::S3::Model::HeadObjectRequest object_request;
+    object_request.SetBucket("gsvars3storage");
+    object_request.SetKey("test/KontrollDNACoriell/Sample_NA12878_58/" + QFileInfo(filename).fileName().toStdString());
+
+    auto get_object_outcome = s3_client.HeadObject(object_request);
+
+    // if (get_object_outcome.IsSuccess())
+    // {
+    quint64 file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
+    // }
+
+
 	// Client wants to see only the size of the requested file (not its content)
 	if (request.getMethod() == RequestMethod::HEAD)
 	{

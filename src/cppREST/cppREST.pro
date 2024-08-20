@@ -1,5 +1,5 @@
 #c++11 and c++14 support
-CONFIG += c++11 
+CONFIG += c++17
 
 #base settings
 QT       -= gui
@@ -38,6 +38,10 @@ LIBS += -L$$PWD/../../bin -lcppXML
 #include htslib library
 INCLUDEPATH += $$PWD/../../htslib/include/
 LIBS += -L$$PWD/../../htslib/lib/ -lhts
+
+INCLUDEPATH += $$PWD/../../aws-sdk/include/
+LIBS += -L$$PWD/../../aws-sdk/lib64 -laws-cpp-sdk-core -laws-cpp-sdk-s3
+
 
 #include zlib library
 LIBS += -lz

@@ -1,10 +1,12 @@
 #include "RequestWorker.h"
 
-RequestWorker::RequestWorker(QSslConfiguration ssl_configuration, qintptr socket, RequestWorkerParams params)
+
+RequestWorker::RequestWorker(QSslConfiguration ssl_configuration, qintptr socket, RequestWorkerParams params, bool is_s3_storage)
     : QRunnable()
     , ssl_configuration_(ssl_configuration)
 	, socket_(socket)
     , params_(params)
+    , is_s3_storage_(is_s3_storage)
 	, is_terminated_(false)
 {
 }
@@ -203,30 +205,45 @@ void RequestWorker::run()
 				return;
 			}
 
+            // if (is_s3_storage_)
+            // {
+            // }
+
+            QFileInfo file_info = QFileInfo(response.getFilename());
 			QSharedPointer<QFile> streamed_file = QSharedPointer<QFile>(new QFile(response.getFilename()));
-            if (!streamed_file->exists())
+
+            if (!fileInS3BucketExists("gsvars3storage",  "test/KontrollDNACoriell/Sample_NA12878_58/" + file_info.fileName().toStdString()))
             {
                 QString error_message = EndpointManager::formatResponseMessage(parsed_request, "Requested file does not exist: " + response.getFilename());
-				Log::error(error_message + user_info + client_type);
-				sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::NOT_FOUND, error_type, error_message));
-				return;
-			}
+                Log::error(error_message + user_info + client_type);
+                sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::NOT_FOUND, error_type, error_message));
+                return;
+            }
 
-            if (!streamed_file->open(QFile::ReadOnly))
-            {
-                QString error_message = EndpointManager::formatResponseMessage(parsed_request, "Could not open a file for streaming: " + response.getFilename());
-				Log::error(error_message + user_info + client_type);
-				sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::INTERNAL_SERVER_ERROR, error_type, error_message));
-				return;
-			}
+   //          if (!streamed_file->exists())
+   //          {
+   //              QString error_message = EndpointManager::formatResponseMessage(parsed_request, "Requested file does not exist: " + response.getFilename());
+            // 	Log::error(error_message + user_info + client_type);
+            // 	sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::NOT_FOUND, error_type, error_message));
+            // 	return;
+            // }
 
-            if (!streamed_file->isOpen())
-            {
-                QString error_message = EndpointManager::formatResponseMessage(parsed_request, "File is not open: " + response.getFilename());
-				Log::error(error_message + user_info + client_type);
-				sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::INTERNAL_SERVER_ERROR, error_type, error_message));
-				return;
-			}
+            streamed_file->open(QFile::ReadOnly);
+   //          if (!streamed_file->open(QFile::ReadOnly))
+   //          {
+   //              QString error_message = EndpointManager::formatResponseMessage(parsed_request, "Could not open a file for streaming: " + response.getFilename());
+            // 	Log::error(error_message + user_info + client_type);
+            // 	sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::INTERNAL_SERVER_ERROR, error_type, error_message));
+            // 	return;
+            // }
+
+   //          if (!streamed_file->isOpen())
+   //          {
+   //              QString error_message = EndpointManager::formatResponseMessage(parsed_request, "File is not open: " + response.getFilename());
+            // 	Log::error(error_message + user_info + client_type);
+            // 	sendEntireResponse(ssl_socket, HttpResponse(ResponseStatus::INTERNAL_SERVER_ERROR, error_type, error_message));
+            // 	return;
+            // }
 
 			sendResponseDataPart(ssl_socket, response.getStatusLine());
 			sendResponseDataPart(ssl_socket, response.getHeaders());
@@ -242,6 +259,36 @@ void RequestWorker::run()
 					transfer_encoding_chunked = true;
 				}
 			}
+
+
+            // Aws::Client::ClientConfiguration clientConfig;
+            // Aws::S3::S3Client s3_client(clientConfig);
+
+            // Aws::S3::Model::GetObjectRequest object_request;
+            // object_request.SetBucket(bucket_name);
+            // object_request.SetKey(object_key);
+
+            // // Set the range header to request a specific byte range
+            // object_request.SetRange(range);
+
+            // auto get_object_outcome = s3_client.GetObject(object_request);
+
+            // if (get_object_outcome.IsSuccess()) {
+            //     auto& retrieved_file = get_object_outcome.GetResultWithOwnership().GetBody();
+
+            //     std::ofstream output_file(output_file_path, std::ios::binary);
+            //     if (output_file.is_open()) {
+            //         output_file << retrieved_file.rdbuf();  // Write the range content to the local file
+            //         output_file.close();
+            //         std::cout << "Range downloaded successfully to: " << output_file_path << std::endl;
+            //     } else {
+            //         std::cerr << "Failed to open local file for writing." << std::endl;
+            //     }
+            // } else {
+            //     std::cerr << "Failed to download range from S3. Error: "
+            //               << get_object_outcome.GetError().GetMessage() << std::endl;
+            // }
+
 
 			long chunk_size = STREAM_CHUNK_SIZE;
 			QByteArray data;
@@ -418,4 +465,80 @@ void RequestWorker::sendEntireResponse(QSslSocket* socket, const HttpResponse& r
 		socket->write(response.getPayload());
 	}
 	closeConnection(socket);
+}
+
+bool RequestWorker::fileInS3BucketExists(const Aws::String& bucket_name, const Aws::String& object_key)
+{
+    Aws::Client::ClientConfiguration clientConfig;
+    Aws::S3::S3Client s3_client(clientConfig);
+    Aws::S3::Model::HeadObjectRequest object_request;
+    object_request.SetBucket(bucket_name);
+    object_request.SetKey(object_key);
+
+    auto get_object_outcome = s3_client.HeadObject(object_request);
+    get_object_outcome.IsSuccess();
+    if (get_object_outcome.IsSuccess())
+    {
+        return true;
+    }
+
+    return false;
+}
+
+long long RequestWorker::getS3BucketFileSize(const Aws::String& bucket_name, const Aws::String& object_key)
+{
+    Aws::Client::ClientConfiguration clientConfig;
+    Aws::S3::S3Client s3_client(clientConfig);
+    Aws::S3::Model::HeadObjectRequest object_request;
+    object_request.SetBucket(bucket_name);
+    object_request.SetKey(object_key);
+
+    auto get_object_outcome = s3_client.HeadObject(object_request);
+    if (get_object_outcome.IsSuccess())
+    {
+        return get_object_outcome.GetResultWithOwnership().GetContentLength();
+    }
+
+    return -1;
+}
+
+void RequestWorker::getS3BucketFileInChunks(const Aws::String& bucket_name, const Aws::String& object_key, QSslSocket* ssl_socket)
+{
+    std::size_t chunk_size = STREAM_CHUNK_SIZE;
+
+    Aws::Client::ClientConfiguration clientConfig;
+    Aws::S3::S3Client s3_client(clientConfig);
+
+    Aws::S3::Model::GetObjectRequest object_request;
+    object_request.SetBucket(bucket_name);
+    object_request.SetKey(object_key);
+
+    auto get_object_outcome = s3_client.GetObject(object_request);
+
+    if (get_object_outcome.IsSuccess()) {
+        auto& retrieved_file = get_object_outcome.GetResultWithOwnership().GetBody();
+
+        // std::ofstream output_file(output_file_path, std::ios::binary);
+        // if (!output_file.is_open()) {
+        //     std::cerr << "Failed to open local file for writing." << std::endl;
+        //     return;
+        // }
+
+        std::vector<char> buffer(chunk_size);  // Buffer to hold chunks of data
+        while (retrieved_file) {
+            retrieved_file.read(buffer.data(), chunk_size);  // Read up to chunk_size bytes
+            std::streamsize bytes_read = retrieved_file.gcount();  // Get the actual number of bytes read
+
+            sendResponseDataPart(ssl_socket, QByteArray(buffer.data(), buffer.size()));
+
+            // output_file.write(buffer.data(), bytes_read);  // Write the bytes to the file
+        }
+
+        // output_file.close();
+        // std::cout << "Range downloaded successfully to: " << output_file_path << std::endl;
+    } else {
+        std::cerr << "Failed to download range from S3. Error: "
+                  << get_object_outcome.GetError().GetMessage() << std::endl;
+    }
+
 }

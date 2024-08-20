@@ -30,6 +30,9 @@ INCLUDEPATH += $$PWD/../GSvarServer
 #include cppTFW library
 INCLUDEPATH += $$PWD/../cppTFW
 
+INCLUDEPATH += $$PWD/../../aws-sdk/include/
+LIBS += -L$$PWD/../../aws-sdk/lib64 -laws-cpp-sdk-core -laws-cpp-sdk-s3
+
 HEADERS += \
     Controller-Test.h \
     Server-IntegrationTest.h
