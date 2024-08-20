@@ -1,5 +1,5 @@
 #c++11 support
-CONFIG += c++11
+CONFIG += c++17
 
 #base settings
 QT += core
