@@ -104,6 +104,7 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
     Aws::SDKOptions options;
     Aws::InitAPI(options);
     Aws::Client::ClientConfiguration clientConfig;
+    clientConfig.region(Aws::Region::EU_CENTRAL_1);
     Aws::S3::S3Client s3_client(clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket("gsvars3storage");
