@@ -119,6 +119,17 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
         file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
         Log::info("HEAD size = " + QString::number(file_size));
     }
+    else
+    {
+        std::string stdString(get_object_outcome.GetError().GetMessage().c_str());
+
+        // Convert std::string to QString
+        QString qString = QString::fromStdString(stdString);
+
+        Log::info("AWS error");
+        Log::error(qString);
+    }
+
     Log::info("SIZE = " + QString::number(file_size));
     Aws::ShutdownAPI(options);
 
