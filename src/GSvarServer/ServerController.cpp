@@ -107,7 +107,9 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
     Aws::S3::S3Client s3_client(clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket("gsvars3storage");
-    object_request.SetKey("test/KontrollDNACoriell/Sample_NA12878_58/" + QFileInfo(filename).fileName().toStdString());
+    Log::info("QFileInfo(filename).fileName().toStdString() = " + QFileInfo(filename).fileName());
+    const char* key_name = QString("test/KontrollDNACoriell/Sample_NA12878_58/" + QFileInfo(filename).fileName()).toUtf8().constData();
+    object_request.SetKey(key_name);
 
     auto get_object_outcome = s3_client.HeadObject(object_request);
 
@@ -115,6 +117,7 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
     if (get_object_outcome.IsSuccess())
     {
         file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
+        Log::info("HEAD size = " + QString::number(file_size));
     }
     Log::info("SIZE = " + QString::number(file_size));
     Aws::ShutdownAPI(options);
