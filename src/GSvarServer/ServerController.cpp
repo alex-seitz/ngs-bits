@@ -86,21 +86,6 @@ HttpResponse ServerController::createStaticStreamResponse(const QString& filenam
 
 HttpResponse ServerController::createStaticFileResponse(const QString& filename, const HttpRequest& request)
 {
-    Log::info("STATIC RESPONSE: " + filename);
-    if ((filename.isEmpty()) || ((!filename.isEmpty()) && (!QFile::exists(filename))))
-    {
-        Log::error(EndpointManager::formatResponseMessage(request, "Requested file does not exist: " + filename));
-		// Special case, when sending HEAD request for a file that does not exist
-		if (request.getMethod() == RequestMethod::HEAD)
-		{
-			return HttpResponse(ResponseStatus::NOT_FOUND, request.getContentType(), 0.0);
-		}
-
-        return HttpResponse(ResponseStatus::NOT_FOUND, request.getContentType(), EndpointManager::formatResponseMessage(request, "Requested file could not be found"));
-	}
-
-    // quint64 file_size = QFile(filename).size();
-
     Aws::SDKOptions options;
     Aws::InitAPI(options);
 
@@ -119,9 +104,32 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
     object_request.SetKey(key_name);
 
     auto get_object_outcome = s3_client.HeadObject(object_request);
+    bool key_exists = false;
+    if (get_object_outcome.IsSuccess())
+    {
+        key_exists = true;
+    }
+
+    Log::info("STATIC RESPONSE: " + filename);
+    if ((filename.isEmpty()) || ((!filename.isEmpty()) && (!key_exists)))
+    {
+        Log::error(EndpointManager::formatResponseMessage(request, "Requested file does not exist: " + filename));
+		// Special case, when sending HEAD request for a file that does not exist
+		if (request.getMethod() == RequestMethod::HEAD)
+		{
+			return HttpResponse(ResponseStatus::NOT_FOUND, request.getContentType(), 0.0);
+		}
+
+        return HttpResponse(ResponseStatus::NOT_FOUND, request.getContentType(), EndpointManager::formatResponseMessage(request, "Requested file could not be found"));
+	}
+
+    // quint64 file_size = QFile(filename).size();
+
+
+
 
     quint64 file_size = 0;
-    if (get_object_outcome.IsSuccess())
+    if (key_exists)
     {
         file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
         Log::info("HEAD size = " + QString::number(file_size));
