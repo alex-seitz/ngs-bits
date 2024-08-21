@@ -86,7 +86,8 @@ HttpResponse ServerController::createStaticStreamResponse(const QString& filenam
 
 HttpResponse ServerController::createStaticFileResponse(const QString& filename, const HttpRequest& request)
 {
-	if ((filename.isEmpty()) || ((!filename.isEmpty()) && (!QFile::exists(filename))))
+    Log::info("STATIC RESPONSE: " + filename);
+    if ((filename.isEmpty()) || ((!filename.isEmpty()) && (!QFile::exists(filename))))
     {
         Log::error(EndpointManager::formatResponseMessage(request, "Requested file does not exist: " + filename));
 		// Special case, when sending HEAD request for a file that does not exist
@@ -110,11 +111,13 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
 
     auto get_object_outcome = s3_client.HeadObject(object_request);
 
-    // if (get_object_outcome.IsSuccess())
-    // {
-    quint64 file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
-    // }
-
+    quint64 file_size = 0;
+    if (get_object_outcome.IsSuccess())
+    {
+        file_size = get_object_outcome.GetResultWithOwnership().GetContentLength();
+    }
+    Log::info("SIZE = " + QString::number(file_size));
+    Aws::ShutdownAPI(options);
 
 	// Client wants to see only the size of the requested file (not its content)
 	if (request.getMethod() == RequestMethod::HEAD)
