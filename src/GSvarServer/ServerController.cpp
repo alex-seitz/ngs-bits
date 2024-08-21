@@ -103,10 +103,15 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
 
     Aws::SDKOptions options;
     Aws::InitAPI(options);
+
+    Aws::Auth::AWSCredentials credentials;
+    credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+    credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
     Aws::Client::ClientConfiguration clientConfig;
     clientConfig.region = Aws::Region::EU_CENTRAL_1;
 
-    Aws::S3::S3Client s3_client(clientConfig);
+    Aws::S3::S3Client s3_client(credentials, nullptr, clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket("gsvars3storage");
     Log::info("QFileInfo(filename).fileName().toStdString() = " + QFileInfo(filename).fileName());

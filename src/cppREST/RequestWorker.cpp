@@ -469,10 +469,18 @@ void RequestWorker::sendEntireResponse(QSslSocket* socket, const HttpResponse& r
 
 bool RequestWorker::fileInS3BucketExists(const Aws::String& bucket_name, const Aws::String& object_key)
 {
+
     Aws::SDKOptions options;
     Aws::InitAPI(options);
+
+    Aws::Auth::AWSCredentials credentials;
+    credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+    credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
     Aws::Client::ClientConfiguration clientConfig;
-    Aws::S3::S3Client s3_client(clientConfig);
+    clientConfig.region = Aws::Region::EU_CENTRAL_1;
+
+    Aws::S3::S3Client s3_client(credentials, nullptr, clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket(bucket_name);
     object_request.SetKey(object_key);
@@ -489,10 +497,18 @@ bool RequestWorker::fileInS3BucketExists(const Aws::String& bucket_name, const A
 
 long long RequestWorker::getS3BucketFileSize(const Aws::String& bucket_name, const Aws::String& object_key)
 {
+
     Aws::SDKOptions options;
     Aws::InitAPI(options);
+
+    Aws::Auth::AWSCredentials credentials;
+    credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+    credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
     Aws::Client::ClientConfiguration clientConfig;
-    Aws::S3::S3Client s3_client(clientConfig);
+    clientConfig.region = Aws::Region::EU_CENTRAL_1;
+
+    Aws::S3::S3Client s3_client(credentials, nullptr, clientConfig);
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket(bucket_name);
     object_request.SetKey(object_key);
@@ -512,8 +528,15 @@ void RequestWorker::getS3BucketFileInChunks(const Aws::String& bucket_name, cons
 
     Aws::SDKOptions options;
     Aws::InitAPI(options);
+
+    Aws::Auth::AWSCredentials credentials;
+    credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+    credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
     Aws::Client::ClientConfiguration clientConfig;
-    Aws::S3::S3Client s3_client(clientConfig);
+    clientConfig.region = Aws::Region::EU_CENTRAL_1;
+
+    Aws::S3::S3Client s3_client(credentials, nullptr, clientConfig);
 
     Aws::S3::Model::GetObjectRequest object_request;
     object_request.SetBucket(bucket_name);
