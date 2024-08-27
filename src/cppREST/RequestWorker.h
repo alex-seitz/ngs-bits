@@ -24,6 +24,8 @@
 #include <QDebug>
 #include <fstream>
 
+#include "AwsS3File.h"
+
 class CPPRESTSHARED_EXPORT RequestWorker
     : public QRunnable
 {
@@ -33,7 +35,7 @@ public:
     void run() override;
 
 private:
-	const int STREAM_CHUNK_SIZE = 1024*10;
+    std::size_t STREAM_CHUNK_SIZE = 1024*10;
 	QString intToHex(const int &input);
 
 	void closeConnection(QSslSocket* socket);

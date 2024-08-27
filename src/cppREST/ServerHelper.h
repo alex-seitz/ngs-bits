@@ -35,6 +35,8 @@ public:
 	static QDateTime getServerStartDateTime();
 
     static QString getCurrentServerLogFile();
+    static QString getFileNamefromFilePath(const QString& path);
+    static QString getAbsolutePathfromFilePath(const QString& path);
 
 protected:
 	ServerHelper();

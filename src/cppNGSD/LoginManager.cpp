@@ -71,6 +71,10 @@ void LoginManager::setAllTokens(const QString& user, const QString& password)
         add_headers.insert("Accept", "text/plain");
         add_headers.insert("Content-type", "application/x-www-form-urlencoded");
         manager.user_token_ = sendPostApiRequest("login", "name="+user+"&password="+password, add_headers);
+
+        Log::error("manager.user_token_");
+        Log::error(manager.user_token_);
+
         manager.db_token_ = sendPostApiRequest("db_token", "token="+manager.user_token_, add_headers);
         QByteArray ngsd_credentials = sendPostApiRequest("ngsd_credentials", "dbtoken="+manager.db_token_+"&secret="+QString::number(ToolBase::encryptionKey("encryption helper"), 16), add_headers);
         QJsonDocument ngsd_json = QJsonDocument::fromJson(ngsd_credentials);

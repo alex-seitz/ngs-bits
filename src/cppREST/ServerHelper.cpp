@@ -216,6 +216,28 @@ QString ServerHelper::getCurrentServerLogFile()
     }
 }
 
+QString ServerHelper::getFileNamefromFilePath(const QString& path)
+{
+    int separator_pos = path.lastIndexOf(QDir::separator());
+    if (separator_pos != -1)
+    {
+        return path.mid(separator_pos+1);
+    }
+
+    return path;
+}
+
+QString ServerHelper::getAbsolutePathfromFilePath(const QString& path)
+{
+    int separator_pos = path.lastIndexOf(QDir::separator());
+    if (separator_pos != -1)
+    {
+        return path.mid(0, separator_pos);
+    }
+
+    return path;
+}
+
 ServerHelper& ServerHelper::instance()
 {
 	static ServerHelper server_helper;

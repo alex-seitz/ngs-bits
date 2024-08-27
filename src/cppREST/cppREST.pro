@@ -50,6 +50,7 @@ LIBS += -lz
 QMAKE_LFLAGS += "-Wl,-rpath,\'\$$ORIGIN\'"
 
 SOURCES += \
+    AwsS3File.cpp \
     EndpointManager.cpp \
     HtmlEngine.cpp \
     HttpUtils.cpp \
@@ -65,6 +66,7 @@ SOURCES += \
     UrlManager.cpp
 
 HEADERS += \
+    AwsS3File.h \
     EndpointManager.h \
     HtmlEngine.h \
     HttpParts.h \

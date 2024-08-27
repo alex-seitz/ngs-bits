@@ -1489,7 +1489,8 @@ QString ServerController::findPathForTempUrl(QList<QString> path_parts)
 		if (!url_entity.filename_with_path.isEmpty())
 		{
 			path_parts.removeAt(0);
-			return QFileInfo(url_entity.filename_with_path).absolutePath() + QDir::separator() + path_parts.join(QDir::separator());
+            // return QFileInfo(url_entity.filename_with_path).absolutePath() + QDir::separator() + path_parts.join(QDir::separator());
+            return ServerHelper::getAbsolutePathfromFilePath(url_entity.filename_with_path) + QDir::separator() + path_parts.join(QDir::separator());
 		}
 	}
 
@@ -1539,7 +1540,7 @@ QString ServerController::addFileToTempStorage(const QString& file)
 
     if (QFileInfo(file).exists())
     {
-        UrlManager::addNewUrl(UrlEntity(id, QFileInfo(file).fileName(), QFileInfo(file).absolutePath(), file, id, QDateTime::currentDateTime()));
+        UrlManager::addNewUrl(UrlEntity(id, ServerHelper::getFileNamefromFilePath(file), ServerHelper::getAbsolutePathfromFilePath(file), file, id, QDateTime::currentDateTime()));
     }
     else
     {
@@ -1573,8 +1574,9 @@ QString ServerController::getProcessedSampleFile(const int& ps_id, const PathTyp
 
 QString ServerController::createTempUrl(const QString& file, const QString& token)
 {
+    // TODO: change server folder to S3 bucket key
     QString id = addFileToTempStorage(file);
-	return ClientHelper::serverApiUrl() + "temp/" + id + "/" + QFileInfo(file).fileName() + "?token=" + token;
+    return ClientHelper::serverApiUrl() + "temp/" + id + "/" + ServerHelper::getFileNamefromFilePath(file) + "?token=" + token;
 }
 
 HttpResponse ServerController::createStaticFolderResponse(const QString path, const HttpRequest& request)
