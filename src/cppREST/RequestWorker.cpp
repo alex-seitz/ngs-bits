@@ -313,7 +313,7 @@ void RequestWorker::run()
             {
                 Log::info(EndpointManager::formatResponseMessage(parsed_request, "Byte range [" + QString::number(ranges[i].start) + ", " + QString::number(ranges[i].end) + "] from " + QString::number(file_size) + " bytes in total: " + response.getFilename() + user_info + client_type));
                 chunk_size = STREAM_CHUNK_SIZE;
-                // pos = ranges[i].start;
+                pos = ranges[i].start;
 				if (ranges_count > 1)
 				{
 					sendResponseDataPart(ssl_socket, "--"+response.getBoundary()+"\r\n");
@@ -321,44 +321,65 @@ void RequestWorker::run()
 					sendResponseDataPart(ssl_socket, "Content-Range: bytes " + QByteArray::number(ranges[i].start) + "-" + QByteArray::number(ranges[i].end) + "/" + QByteArray::number(file_size) + "\r\n");
 					sendResponseDataPart(ssl_socket, "\r\n");
 				}
-                // while(pos<(ranges[i].end+1))
-                // {
-					if ((is_terminated_) || (ssl_socket->state() == QSslSocket::SocketState::UnconnectedState) || (ssl_socket->state() == QSslSocket::SocketState::ClosingState))
+
+                if ((is_terminated_) || (ssl_socket->state() == QSslSocket::SocketState::UnconnectedState) || (ssl_socket->state() == QSslSocket::SocketState::ClosingState))
+                {
+                    Log::info(EndpointManager::formatResponseMessage(parsed_request, "Range streaming request process has been terminated: " + response.getFilename() + user_info + client_type));
+                    return;
+                }
+
+                if (ranges[i].start >= (file_size-1)) break;
+
+
+                Log::info("CHUNK " + QString::number(STREAM_CHUNK_SIZE));
+                Log::info("Start a stream");
+
+                Aws::Auth::AWSCredentials credentials(Settings::string("aws_access_key_id", true).toUtf8().data(), Settings::string("aws_secret_access_key", true).toUtf8().data());
+                Aws::Client::ClientConfiguration clientConfig;
+                clientConfig.region = Aws::Region::EU_CENTRAL_1;;
+                std::shared_ptr<Aws::S3::S3Client> s3Client = Aws::MakeShared<Aws::S3::S3Client>("AwsS3File", credentials, nullptr, clientConfig);
+                QString s3_file_name = response.getFilename().replace("/media/storage-500/", "");
+                Aws::S3::Model::GetObjectRequest object_request;
+                object_request.SetBucket("gsvars3storage");
+                object_request.SetKey(s3_file_name.toUtf8().data());
+
+                Aws::String range = "bytes=" + std::to_string(ranges[i].start) + "-" + std::to_string(ranges[i].end);
+                object_request.SetRange(range);
+
+                auto get_object_outcome = s3Client->GetObject(object_request);
+
+                if (get_object_outcome.IsSuccess()) {
+                    Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
+                    std::size_t chunkSize = STREAM_CHUNK_SIZE;
+                    std::vector<char> buffer(chunkSize);
+
+                    while (stream.good())
                     {
-                        Log::info(EndpointManager::formatResponseMessage(parsed_request, "Range streaming request process has been terminated: " + response.getFilename() + user_info + client_type));
-                        // streamed_file->close();
-						return;
-					}
 
-                    if (ranges[i].start >= (file_size-1)) break;
-                    // streamed_file->seek(pos);
+                        stream.read(buffer.data(), chunkSize);  // Read a chunk of data
+                        std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
 
-
-
-
-                    if ((ranges[i].start+chunk_size)>(ranges[i].end+1))
-					{
-                        chunk_size = ranges[i].end - ranges[i].start + 1;
-					}
-
-					if (chunk_size <= 0) break;
-                    Aws::IOStream& out_stream = aws_file.stream(ranges[i].start, file_size-1);
-                    // data = streamed_file->read(chunk_size);
-
-                    std::vector<char> buffer(chunk_size);  // Buffer to hold chunks of data
-                    while (out_stream) {
-                        out_stream.read(buffer.data(), chunk_size);  // Read up to chunk_size bytes
-                        // std::streamsize bytes_read = out_stream.gcount();  // Get the actual number of bytes read
-
-                        sendResponseDataPart(ssl_socket, QByteArray(buffer.data(), buffer.size()));
-
-                        // output_file.write(buffer.data(), bytes_read);  // Write the bytes to the file
+                        if (bytesRead > 0)
+                        {
+                            QByteArray byteArray;
+                            byteArray.append(buffer.data(), static_cast<int>(bytesRead));
+                            sendResponseDataPart(ssl_socket, byteArray);
+                        }
                     }
 
+                    if (stream.eof())
+                    {
+                        std::cout << "End of stream reached." << std::endl;
+                    } else if (stream.fail())
+                    {
+                        std::cerr << "Stream read failed." << std::endl;
+                    } else if (stream.bad())
+                    {
+                        std::cerr << "Stream is in a bad state." << std::endl;
+                    }
+                }
 
-                    // sendResponseDataPart(ssl_socket, data);
-                    // pos = pos + data.size();
-                // }
+
 				if (is_terminated_) return;
 				if (ranges_count > 1) sendResponseDataPart(ssl_socket, "\r\n");
 				if ((i == (ranges_count-1)) && (ranges_count > 1))
