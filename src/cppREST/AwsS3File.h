@@ -14,7 +14,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "Settings.h";
+#include "Settings.h"
 #include "Exceptions.h"
 #include "Log.h"
 

@@ -61,7 +61,7 @@ quint64 AwsS3File::size()
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket(bucket_name_.toUtf8().data());
     object_request.SetKey(key_name_.toUtf8().data());
-    auto get_object_outcome = s3_client_.HeadObject(object_request);
+    auto get_object_outcome = s3Client->HeadObject(object_request);
 
     if (get_object_outcome.IsSuccess())
     {

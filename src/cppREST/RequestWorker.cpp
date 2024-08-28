@@ -284,20 +284,6 @@ void RequestWorker::run()
 				}
 			}
 
-
-
-            // std::vector<char> buffer(chunk_size);  // Buffer to hold chunks of data
-            // while (retrieved_file) {
-            //     retrieved_file.read(buffer.data(), chunk_size);  // Read up to chunk_size bytes
-            //     std::streamsize bytes_read = retrieved_file.gcount();  // Get the actual number of bytes read
-
-            //     sendResponseDataPart(ssl_socket, QByteArray(buffer.data(), buffer.size()));
-
-            //     // output_file.write(buffer.data(), bytes_read);  // Write the bytes to the file
-            // }
-
-
-
 			long chunk_size = STREAM_CHUNK_SIZE;
             // QByteArray data;
 			QList<ByteRange> ranges = response.getByteRanges();
@@ -334,7 +320,11 @@ void RequestWorker::run()
                 Log::info("CHUNK " + QString::number(STREAM_CHUNK_SIZE));
                 Log::info("Start a stream");
 
-                Aws::Auth::AWSCredentials credentials(Settings::string("aws_access_key_id", true).toUtf8().data(), Settings::string("aws_secret_access_key", true).toUtf8().data());
+                Aws::Auth::AWSCredentials credentials;
+                credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+                credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
+
                 Aws::Client::ClientConfiguration clientConfig;
                 clientConfig.region = Aws::Region::EU_CENTRAL_1;;
                 std::shared_ptr<Aws::S3::S3Client> s3Client = Aws::MakeShared<Aws::S3::S3Client>("AwsS3File", credentials, nullptr, clientConfig);
@@ -396,7 +386,11 @@ void RequestWorker::run()
                 Log::info("CHUNK " + QString::number(STREAM_CHUNK_SIZE));
                 Log::info("Start a stream");
 
-                Aws::Auth::AWSCredentials credentials(Settings::string("aws_access_key_id", true).toUtf8().data(), Settings::string("aws_secret_access_key", true).toUtf8().data());
+                Aws::Auth::AWSCredentials credentials;
+                credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+                credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+
+
                 Aws::Client::ClientConfiguration clientConfig;
                 clientConfig.region = Aws::Region::EU_CENTRAL_1;;
                 std::shared_ptr<Aws::S3::S3Client> s3Client = Aws::MakeShared<Aws::S3::S3Client>("AwsS3File", credentials, nullptr, clientConfig);
