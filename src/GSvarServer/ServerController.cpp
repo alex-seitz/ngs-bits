@@ -84,6 +84,19 @@ HttpResponse ServerController::createStaticStreamResponse(const QString& filenam
 	return HttpResponse(response_data);
 }
 
+HttpResponse ServerController::createStaticStreamResponse(const QString& filename, const qint64& size, bool is_downloadable)
+{
+    BasicResponseData response_data;
+    response_data.length = size;
+    response_data.filename = filename;
+    response_data.file_size = response_data.length;
+    response_data.is_stream = true;
+    response_data.content_type = HttpUtils::getContentTypeByFilename(filename);
+    response_data.is_downloadable = is_downloadable;
+
+    return HttpResponse(response_data);
+}
+
 HttpResponse ServerController::createStaticFileResponse(const QString& filename, const HttpRequest& request)
 {
     Aws::SDKOptions options;
@@ -235,7 +248,7 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
 
 
 	// Stream the content of the entire file
-	return createStaticStreamResponse(filename, false);
+    return createStaticStreamResponse(filename, file_size, false);
 }
 
 HttpResponse ServerController::serveResourceAsset(const HttpRequest& request)
@@ -1538,14 +1551,14 @@ QString ServerController::addFileToTempStorage(const QString& file)
 {
     QString id = ServerHelper::generateUniqueStr();
 
-    if (QFileInfo(file).exists())
-    {
+    // if (QFileInfo(file).exists())
+    // {
         UrlManager::addNewUrl(UrlEntity(id, ServerHelper::getFileNamefromFilePath(file), ServerHelper::getAbsolutePathfromFilePath(file), file, id, QDateTime::currentDateTime()));
-    }
-    else
-    {
-        UrlManager::addNewUrl(UrlEntity(id, file, "", file, id, QDateTime::currentDateTime()));
-    }
+    // }
+    // else
+    // {
+    //     UrlManager::addNewUrl(UrlEntity(id, file, "", file, id, QDateTime::currentDateTime()));
+    // }
     return id;
 }
 

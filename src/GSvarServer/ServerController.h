@@ -130,6 +130,8 @@ private:
 	static HttpResponse createStaticFileRangeResponse(const QString& filename, const QList<ByteRange>& byte_ranges, const ContentType& type, bool is_downloadable);
 	/// Serves a stream, used to transfer large files without opening multiple connections
 	static HttpResponse createStaticStreamResponse(const QString& filename, bool is_downloadable);
+    static HttpResponse createStaticStreamResponse(const QString& filename, const qint64& size, bool is_downloadable);
+
     static HttpResponse createStaticFileResponse(const QString& filename, const HttpRequest& request);
 	static HttpResponse createStaticFolderResponse(const QString path, const HttpRequest& request);
 	static HttpResponse createStaticLocationResponse(const QString path, const HttpRequest& request);
