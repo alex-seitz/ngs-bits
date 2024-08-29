@@ -71,6 +71,27 @@ HttpResponse ServerController::createStaticFileRangeResponse(const QString& file
 	return HttpResponse(response_data);
 }
 
+HttpResponse ServerController::createStaticFileRangeResponse(const QString& filename, const qint64& size, const QList<ByteRange>& byte_ranges, const ContentType& type, bool is_downloadable)
+{
+    quint64 total_length = 0;
+    for (int i = 0; i < byte_ranges.count(); ++i)
+    {
+        total_length = total_length + byte_ranges[i].length;
+    }
+
+    BasicResponseData response_data;
+    response_data.filename = filename;
+    response_data.length = total_length;
+    response_data.byte_ranges = byte_ranges;
+    response_data.file_size = size;
+    response_data.is_stream = true;
+    response_data.content_type = type;
+    response_data.status = ResponseStatus::PARTIAL_CONTENT;
+    response_data.is_downloadable = is_downloadable;
+
+    return HttpResponse(response_data);
+}
+
 HttpResponse ServerController::createStaticStreamResponse(const QString& filename, bool is_downloadable)
 {
 	BasicResponseData response_data;
@@ -243,7 +264,7 @@ HttpResponse ServerController::createStaticFileResponse(const QString& filename,
             return HttpResponse(ResponseStatus::RANGE_NOT_SATISFIABLE, request.getContentType(), EndpointManager::formatResponseMessage(request, "Overlapping ranges have been detected"));
 		}
 
-		return createStaticFileRangeResponse(filename, byte_ranges, HttpUtils::getContentTypeByFilename(filename), false);
+        return createStaticFileRangeResponse(filename, file_size, byte_ranges, HttpUtils::getContentTypeByFilename(filename), false);
 	}
 
 

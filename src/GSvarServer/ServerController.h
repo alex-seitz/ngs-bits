@@ -128,6 +128,8 @@ private:
 	static QString createTempUrl(const QString& file, const QString& token);
 	/// Serves a file for a byte range request (i.e. specific fragment of a file)
 	static HttpResponse createStaticFileRangeResponse(const QString& filename, const QList<ByteRange>& byte_ranges, const ContentType& type, bool is_downloadable);
+
+    static HttpResponse createStaticFileRangeResponse(const QString& filename, const qint64& size, const QList<ByteRange>& byte_ranges, const ContentType& type, bool is_downloadable);
 	/// Serves a stream, used to transfer large files without opening multiple connections
 	static HttpResponse createStaticStreamResponse(const QString& filename, bool is_downloadable);
     static HttpResponse createStaticStreamResponse(const QString& filename, const qint64& size, bool is_downloadable);
