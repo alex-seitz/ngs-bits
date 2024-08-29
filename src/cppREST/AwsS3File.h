@@ -47,6 +47,9 @@ private:
     QString bucket_name_;
     QString key_name_;
 
+    bool exists_;
+    quint64 size_;
+
     std::shared_ptr<Aws::S3::S3Client> s3Client;
 };
 

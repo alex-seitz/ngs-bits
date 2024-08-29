@@ -6,6 +6,8 @@ AwsS3File::AwsS3File(QString bucket_name, QString key_name)
     , access_key_id_(Settings::string("aws_access_key_id", true).toUtf8().data())
     , secret_key_(Settings::string("aws_secret_access_key", true).toUtf8().data())
     , region_(Aws::Region::EU_CENTRAL_1)
+    , exists_(false)
+    , size_(-1)
 {
     // Aws::SDKOptions options;
     // Aws::InitAPI(options);
@@ -43,6 +45,8 @@ AwsS3File::AwsS3File(QString bucket_name, QString key_name)
 
 bool AwsS3File::exists()
 {
+    if (size_ != -1) return exists_;
+
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket(bucket_name_.toUtf8().data());
     object_request.SetKey(key_name_.toUtf8().data());
@@ -50,14 +54,19 @@ bool AwsS3File::exists()
     Log::info(key_name_);
     auto get_object_outcome = s3Client->HeadObject(object_request);
     Log::error(QString::fromStdString(get_object_outcome.GetError().GetMessage()));
-    if (get_object_outcome.IsSuccess()) return true;
-    // Aws::ShutdownAPI(options);
+    if (get_object_outcome.IsSuccess())
+    {
+        size_ = get_object_outcome.GetResultWithOwnership().GetContentLength();
+        exists_ = true;
+    }
 
-    return false;
+    return exists_;
 }
 
 quint64 AwsS3File::size()
 {
+    if (exists_) return size_;
+
     Aws::S3::Model::HeadObjectRequest object_request;
     object_request.SetBucket(bucket_name_.toUtf8().data());
     object_request.SetKey(key_name_.toUtf8().data());
@@ -65,10 +74,12 @@ quint64 AwsS3File::size()
 
     if (get_object_outcome.IsSuccess())
     {
-        return get_object_outcome.GetResultWithOwnership().GetContentLength();
+        size_ = get_object_outcome.GetResultWithOwnership().GetContentLength();
+        exists_ = true;
     }
 
-   THROW(Exception, "Could not access the size of a S3 object: " + QString(key_name_));
+    return size_;
+    // THROW(Exception, "Could not access the size of a S3 object: " + QString(key_name_));
 }
 
 Aws::IOStream& AwsS3File::stream()
