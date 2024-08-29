@@ -284,7 +284,7 @@ void RequestWorker::run()
 				}
 			}
 
-			long chunk_size = STREAM_CHUNK_SIZE;
+
             // QByteArray data;
 			QList<ByteRange> ranges = response.getByteRanges();
 			int ranges_count = ranges.count();
@@ -298,7 +298,7 @@ void RequestWorker::run()
 			for (int i = 0; i < ranges_count; ++i)
             {
                 Log::info(EndpointManager::formatResponseMessage(parsed_request, "Byte range [" + QString::number(ranges[i].start) + ", " + QString::number(ranges[i].end) + "] from " + QString::number(file_size) + " bytes in total: " + response.getFilename() + user_info + client_type));
-                chunk_size = STREAM_CHUNK_SIZE;
+
                 pos = ranges[i].start;
 				if (ranges_count > 1)
 				{
@@ -340,13 +340,13 @@ void RequestWorker::run()
 
                 if (get_object_outcome.IsSuccess()) {
                     Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
-                    std::size_t chunkSize = STREAM_CHUNK_SIZE;
-                    std::vector<char> buffer(chunkSize);
+                    // std::size_t chunkSize = STREAM_CHUNK_SIZE;
+                    std::vector<char> buffer(STREAM_CHUNK_SIZE);
 
                     while (stream.good())
                     {
 
-                        stream.read(buffer.data(), chunkSize);  // Read a chunk of data
+                        stream.read(buffer.data(), STREAM_CHUNK_SIZE);  // Read a chunk of data
                         std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
 
                         if (bytesRead > 0)
@@ -383,7 +383,7 @@ void RequestWorker::run()
 			// Regular stream
 			if (ranges_count == 0)
 			{
-                Log::info("CHUNK " + QString::number(STREAM_CHUNK_SIZE));
+
                 Log::info("Start a stream");
 
                 Aws::Auth::AWSCredentials credentials;
@@ -403,13 +403,13 @@ void RequestWorker::run()
 
                 if (get_object_outcome.IsSuccess()) {
                     Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
-                    std::size_t chunkSize = STREAM_CHUNK_SIZE;
-                    std::vector<char> buffer(chunkSize);
+                    // std::size_t chunkSize = STREAM_CHUNK_SIZE;
+                    std::vector<char> buffer(STREAM_CHUNK_SIZE);
 
                     while (stream.good())
                     {
 
-                        stream.read(buffer.data(), chunkSize);  // Read a chunk of data
+                        stream.read(buffer.data(), STREAM_CHUNK_SIZE);  // Read a chunk of data
                         std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
 
                         if (bytesRead > 0)
@@ -594,7 +594,7 @@ long long RequestWorker::getS3BucketFileSize(const Aws::String& bucket_name, con
 
 void RequestWorker::getS3BucketFileInChunks(const Aws::String& bucket_name, const Aws::String& object_key, QSslSocket* ssl_socket)
 {
-    std::size_t chunk_size = STREAM_CHUNK_SIZE;
+    // std::size_t chunk_size = STREAM_CHUNK_SIZE;
 
     Aws::SDKOptions options;
     Aws::InitAPI(options);
@@ -623,9 +623,9 @@ void RequestWorker::getS3BucketFileInChunks(const Aws::String& bucket_name, cons
         //     return;
         // }
 
-        std::vector<char> buffer(chunk_size);  // Buffer to hold chunks of data
+        std::vector<char> buffer(STREAM_CHUNK_SIZE);  // Buffer to hold chunks of data
         while (retrieved_file) {
-            retrieved_file.read(buffer.data(), chunk_size);  // Read up to chunk_size bytes
+            retrieved_file.read(buffer.data(), STREAM_CHUNK_SIZE);  // Read up to chunk_size bytes
             std::streamsize bytes_read = retrieved_file.gcount();  // Get the actual number of bytes read
 
             sendResponseDataPart(ssl_socket, QByteArray(buffer.data(), buffer.size()));
