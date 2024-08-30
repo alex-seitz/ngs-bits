@@ -1212,6 +1212,11 @@ public:
 	///Returns the content of a NovaSeqX Plus SampleSheet for a given run
 	QString createSampleSheet(int run_id, QStringList& warnings);
 
+
+    QString getFileNamefromFilePath(const QString& path);
+    QString getAbsolutePathfromFilePath(const QString& path);
+    QString getBaseName(const QString& path);
+
 signals:
 	void initProgress(QString text, bool percentage);
 	void updateProgress(int percentage);

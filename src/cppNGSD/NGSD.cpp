@@ -6291,6 +6291,38 @@ QString NGSD::createSampleSheet(int run_id, QStringList& warnings)
 	return sample_sheet.join("\n");
 }
 
+QString NGSD::getFileNamefromFilePath(const QString& path)
+{
+    int separator_pos = path.lastIndexOf(QDir::separator());
+    if (separator_pos != -1)
+    {
+        return path.mid(separator_pos+1);
+    }
+}
+
+QString NGSD::getAbsolutePathfromFilePath(const QString& path)
+{
+    int separator_pos = path.lastIndexOf(QDir::separator());
+    if (separator_pos != -1)
+    {
+        return path.mid(0, separator_pos);
+    }
+
+    return path;
+}
+
+QString NGSD::getBaseName(const QString& path)
+{
+    QString filename = getFileNamefromFilePath(path);
+    int separator_pos = filename.indexOf(".");
+    if (separator_pos != -1)
+    {
+        return filename.mid(0, separator_pos);
+    }
+
+    return "";
+}
+
 void NGSD::setComment(const Variant& variant, const QString& text)
 {
 	SqlQuery query = getQuery();

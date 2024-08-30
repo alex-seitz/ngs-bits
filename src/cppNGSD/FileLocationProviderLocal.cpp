@@ -1,6 +1,7 @@
 #include "FileLocationProviderLocal.h"
 #include "NGSD.h"
 #include <QDir>
+#include "Log.h"
 
 FileLocationProviderLocal::FileLocationProviderLocal(QString gsvar_file, const SampleHeaderInfo& header_info, AnalysisType analysis_type)
   : gsvar_file_(gsvar_file)
@@ -18,7 +19,9 @@ bool FileLocationProviderLocal::isLocal() const
 
 FileLocation FileLocationProviderLocal::getAnalysisVcf() const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
+
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_var_annotated.vcf.gz";
 
 	return FileLocation{name, PathType::VCF, file, QFile::exists(file)};
@@ -26,7 +29,8 @@ FileLocation FileLocationProviderLocal::getAnalysisVcf() const
 
 FileLocation FileLocationProviderLocal::getAnalysisSvFile() const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_var_structural_variants.bedpe";
 	if(!QFile::exists(file))
 	{
@@ -39,7 +43,8 @@ FileLocation FileLocationProviderLocal::getAnalysisSvFile() const
 
 FileLocation FileLocationProviderLocal::getAnalysisCnvFile() const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString base = gsvar_file_.left(gsvar_file_.length()-6);
 
 	if (analysis_type_==SOMATIC_SINGLESAMPLE || analysis_type_==SOMATIC_PAIR)
@@ -57,7 +62,8 @@ FileLocation FileLocationProviderLocal::getAnalysisCnvFile() const
 FileLocation FileLocationProviderLocal::getAnalysisMosaicCnvFile() const
 {
 
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_mosaic_cnvs.tsv";
 
 	return FileLocation{name, PathType::COPY_NUMBER_CALLS_MOSAIC, file, QFile::exists(file)};
@@ -67,7 +73,8 @@ FileLocation FileLocationProviderLocal::getAnalysisUpdFile() const
 {
 	if (analysis_type_!=GERMLINE_TRIO) return FileLocation();
 
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_upd.tsv";
 
 	return FileLocation(name, PathType::UPD, file, QFile::exists(file));
@@ -75,7 +82,8 @@ FileLocation FileLocationProviderLocal::getAnalysisUpdFile() const
 
 FileLocation FileLocationProviderLocal::getRepeatExpansionImage(QString locus) const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = getAnalysisPath() + QDir::separator() + "repeat_expansions" + QDir::separator() + name  + "_repeats_expansionhunter_" + locus + ".svg";
 	if(!QFile::exists(file))
 	{
@@ -87,14 +95,16 @@ FileLocation FileLocationProviderLocal::getRepeatExpansionImage(QString locus) c
 
 FileLocation FileLocationProviderLocal::getRepeatExpansionHistogram(QString locus) const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = getAnalysisPath() + QDir::separator() + "repeat_expansions" + QDir::separator() + name  + "_repeats_" + locus + "_hist.svg";
 	return FileLocation(name, PathType::REPEAT_EXPANSION_HISTOGRAM, file, QFile::exists(file));
 }
 
 FileLocationList FileLocationProviderLocal::getQcFiles() const
 {
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 
 	FileLocationList output;
 
@@ -303,7 +313,8 @@ FileLocationList FileLocationProviderLocal::getSomaticLowCoverageFiles(bool retu
 
 	FileLocationList output;
 
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString folder = QFileInfo(gsvar_file_).absoluteDir().absolutePath();
 	QStringList beds = Helper::findFiles(folder, "*_lowcov.bed", false);
 
@@ -346,7 +357,9 @@ FileLocation FileLocationProviderLocal::getSomaticCnvCoverageFile() const
 {
 	if (analysis_type_!=SOMATIC_SINGLESAMPLE && analysis_type_!=SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCnvCoverageFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
 
-	QString name = QFileInfo(gsvar_file_).baseName() + " (coverage)";
+    // QString name = QFileInfo(gsvar_file_).baseName() + " (coverage)";
+
+    QString name = NGSD().getBaseName(gsvar_file_) + " (coverage)";
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_cov.seg";
 
 	return FileLocation{name, PathType::COPY_NUMBER_RAW_DATA, file, QFile::exists(file)};
@@ -356,7 +369,9 @@ FileLocation FileLocationProviderLocal::getSomaticCnvCallFile() const
 {
 	if (analysis_type_!=SOMATIC_SINGLESAMPLE && analysis_type_!=SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCnvCallFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
 
-	QString name = QFileInfo(gsvar_file_).baseName() + " (copy number)";
+    // QString name = QFileInfo(gsvar_file_).baseName() + " (copy number)";
+    QString name = NGSD().getBaseName(gsvar_file_) + " (copy number)";
+
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_cnvs.seg";
 
 	return FileLocation{name, PathType::CNV_RAW_DATA_CALL_REGIONS, file, QFile::exists(file)};
@@ -366,7 +381,8 @@ FileLocation FileLocationProviderLocal::getSomaticLowCoverageFile() const
 {
 	if (analysis_type_!=SOMATIC_SINGLESAMPLE && analysis_type_!=SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticLowCoverageFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
 
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_stat_lowcov.bed";
 
 	return FileLocation{name, PathType::LOWCOV_BED, file, QFile::exists(file)};
@@ -376,7 +392,8 @@ FileLocation FileLocationProviderLocal::getSomaticMsiFile() const
 {
 	if (analysis_type_!=SOMATIC_SINGLESAMPLE && analysis_type_!=SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticMsiFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
 
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_msi.tsv";
 
 	return FileLocation{name, PathType::MSI, file, QFile::exists(file)};
@@ -385,7 +402,8 @@ FileLocation FileLocationProviderLocal::getSomaticMsiFile() const
 FileLocation FileLocationProviderLocal::getSomaticIgvScreenshotFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticIgvScreenshotFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();	
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_igv_screenshot.png";
 
 	return FileLocation{name, PathType::IGV_SCREENSHOT, file, QFile::exists(file)};
@@ -394,7 +412,8 @@ FileLocation FileLocationProviderLocal::getSomaticIgvScreenshotFile() const
 FileLocation FileLocationProviderLocal::getSomaticCfdnaCandidateFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCfdnaCandidateFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = gsvar_file_.left(gsvar_file_.length()-6) + "_cfDNA_candidates" + QDir::separator() + "monitoring.vcf";
 
 	return FileLocation{name, PathType::CFDNA_CANDIDATES, file, QFile::exists(file)};
@@ -403,7 +422,8 @@ FileLocation FileLocationProviderLocal::getSomaticCfdnaCandidateFile() const
 FileLocation FileLocationProviderLocal::getSignatureSbsFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCfdnaCandidateFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = QFileInfo(gsvar_file_).dir().absolutePath() + QDir::separator() + "snv_signatures" + QDir::separator() + "De_Novo_map_to_COSMIC_SBS96.csv";
 
 	return FileLocation{name, PathType::SIGNATURE_SBS, file, QFile::exists(file)};
@@ -412,7 +432,8 @@ FileLocation FileLocationProviderLocal::getSignatureSbsFile() const
 FileLocation FileLocationProviderLocal::getSignatureIdFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCfdnaCandidateFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = QFileInfo(gsvar_file_).dir().absolutePath() + QDir::separator() + "snv_signatures" + QDir::separator() + "De_Novo_map_to_COSMIC_ID83.csv";
 
 	return FileLocation{name, PathType::SIGNATURE_ID, file, QFile::exists(file)};
@@ -421,7 +442,8 @@ FileLocation FileLocationProviderLocal::getSignatureIdFile() const
 FileLocation FileLocationProviderLocal::getSignatureDbsFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCfdnaCandidateFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = QFileInfo(gsvar_file_).dir().absolutePath() + QDir::separator() + "snv_signatures" + QDir::separator() + "De_Novo_map_to_COSMIC_DBS78.csv";
 
 	return FileLocation{name, PathType::SIGNATURE_DBS, file, QFile::exists(file)};
@@ -430,7 +452,8 @@ FileLocation FileLocationProviderLocal::getSignatureDbsFile() const
 FileLocation FileLocationProviderLocal::getSignatureCnvFile() const
 {
 	if (analysis_type_ != SOMATIC_SINGLESAMPLE && analysis_type_ != SOMATIC_PAIR) THROW(ProgrammingException, "Invalid call of getSomaticCfdnaCandidateFile() on variant list type " + analysisTypeToString(analysis_type_) + "!");
-	QString name = QFileInfo(gsvar_file_).baseName();
+    // QString name = QFileInfo(gsvar_file_).baseName();
+    QString name = NGSD().getBaseName(gsvar_file_);
 	QString file = QFileInfo(gsvar_file_).dir().absolutePath() + QDir::separator() + "cnv_signatures" + QDir::separator() + "De_Novo_map_to_COSMIC_CNV48.csv";
 
 	return FileLocation{name, PathType::CFDNA_CANDIDATES, file, QFile::exists(file)};
@@ -440,14 +463,18 @@ FileLocation FileLocationProviderLocal::getSignatureCnvFile() const
 
 QString FileLocationProviderLocal::getAnalysisPath() const
 {
-	return QFileInfo(gsvar_file_).absolutePath();
+    return NGSD().getAbsolutePathfromFilePath(gsvar_file_);
+    // return QFileInfo(gsvar_file_).absolutePath();
 }
 
 QString FileLocationProviderLocal::getProjectPath() const
 {
-	QDir directory = QFileInfo(gsvar_file_).dir();
+    Log::perf("start project path");
+    QDir directory = QFileInfo(gsvar_file_).dir();
 	directory.cdUp();
-	return directory.absolutePath();
+    QString out = directory.absolutePath();
+    Log::perf("end project path");
+    return out;
 }
 
 QList<KeyValuePair> FileLocationProviderLocal::getBaseLocations() const
