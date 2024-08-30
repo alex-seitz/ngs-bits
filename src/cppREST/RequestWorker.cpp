@@ -380,55 +380,80 @@ void RequestWorker::run()
 			}
 
             Log::info("Regular stream");
+
+            qint64 regular_stream_chunk = 1024*1024;
+            qint64 stream_start = 0;
+            qint64 stream_end = regular_stream_chunk;
 			// Regular stream
 			if (ranges_count == 0)
 			{
 
-                Log::info("Start a stream");
+                while(stream_start != stream_end)
+                {
+                    Log::info("Start a stream");
 
-                Aws::Auth::AWSCredentials credentials;
-                credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
-                credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
+                    Aws::Auth::AWSCredentials credentials;
+                    credentials.SetAWSAccessKeyId(Settings::string("aws_access_key_id", true).toUtf8().constData());
+                    credentials.SetAWSSecretKey(Settings::string("aws_secret_access_key", true).toUtf8().constData());
 
 
-                Aws::Client::ClientConfiguration clientConfig;
-                clientConfig.region = Aws::Region::EU_CENTRAL_1;;
-                std::shared_ptr<Aws::S3::S3Client> s3Client = Aws::MakeShared<Aws::S3::S3Client>("AwsS3File", credentials, nullptr, clientConfig);
-                QString s3_file_name = response.getFilename().replace("/media/storage-500/", "");
-                Aws::S3::Model::GetObjectRequest object_request;
-                object_request.SetBucket("gsvars3storage");
-                object_request.SetKey(s3_file_name.toUtf8().data());
+                    Aws::Client::ClientConfiguration clientConfig;
+                    clientConfig.region = Aws::Region::EU_CENTRAL_1;;
+                    std::shared_ptr<Aws::S3::S3Client> s3Client = Aws::MakeShared<Aws::S3::S3Client>("AwsS3File", credentials, nullptr, clientConfig);
+                    QString s3_file_name = response.getFilename().replace("/media/storage-500/", "");
+                    Aws::S3::Model::GetObjectRequest object_request;
+                    object_request.SetBucket("gsvars3storage");
+                    object_request.SetKey(s3_file_name.toUtf8().data());
 
-                auto get_object_outcome = s3Client->GetObject(object_request);
 
-                if (get_object_outcome.IsSuccess()) {
-                    Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
-                    // std::size_t chunkSize = STREAM_CHUNK_SIZE;
-                    std::vector<char> buffer(STREAM_CHUNK_SIZE);
+                    Aws::String range = "bytes=" + std::to_string(stream_start) + "-" + std::to_string(stream_end);
+                    object_request.SetRange(range);
 
-                    while (stream.good())
-                    {
 
-                        stream.read(buffer.data(), STREAM_CHUNK_SIZE);  // Read a chunk of data
-                        std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
+                    auto get_object_outcome = s3Client->GetObject(object_request);
 
-                        if (bytesRead > 0)
+                    if (get_object_outcome.IsSuccess()) {
+                        Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
+                        // std::size_t chunkSize = STREAM_CHUNK_SIZE;
+                        std::vector<char> buffer(regular_stream_chunk);
+
+                        while (stream.good())
                         {
-                            QByteArray byteArray;
-                            byteArray.append(buffer.data(), static_cast<int>(bytesRead));
-                            sendResponseDataPart(ssl_socket, byteArray);
+
+                            stream.read(buffer.data(), regular_stream_chunk);  // Read a chunk of data
+                            std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
+
+                            if (bytesRead > 0)
+                            {
+                                QByteArray byteArray;
+                                byteArray.append(buffer.data(), static_cast<int>(bytesRead));
+                                sendResponseDataPart(ssl_socket, byteArray);
+                            }
                         }
+
+                        // std::cout << "Start " << stream_start << ", End " << stream_end << ", Size " << file_size << std::endl;
+                        // if (stream.eof())
+                        // {
+                        //     std::cout << "End of stream reached." << std::endl;
+                        // } else if (stream.fail())
+                        // {
+                        //     std::cerr << "Stream read failed." << std::endl;
+                        // } else if (stream.bad())
+                        // {
+                        //     std::cerr << "Stream is in a bad state." << std::endl;
+                        // }
+                    }
+                    stream_start = stream_end + 1;
+                    if (stream_start >= file_size)
+                    {
+                        stream_start = file_size;
+                        stream_end = file_size;
                     }
 
-                    if (stream.eof())
+                    stream_end += regular_stream_chunk;
+                    if (stream_end >= file_size)
                     {
-                        std::cout << "End of stream reached." << std::endl;
-                    } else if (stream.fail())
-                    {
-                        std::cerr << "Stream read failed." << std::endl;
-                    } else if (stream.bad())
-                    {
-                        std::cerr << "Stream is in a bad state." << std::endl;
+                         stream_end = file_size;
                     }
                 }
 

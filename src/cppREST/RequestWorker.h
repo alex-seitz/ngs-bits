@@ -35,7 +35,7 @@ public:
     void run() override;
 
 private:
-    std::size_t STREAM_CHUNK_SIZE = 1024*1024;
+    std::size_t STREAM_CHUNK_SIZE = 1024*10;
 	QString intToHex(const int &input);
 
 	void closeConnection(QSslSocket* socket);
