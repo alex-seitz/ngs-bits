@@ -325,7 +325,8 @@ HttpResponse ServerController::locateFileByType(const HttpRequest& request)
 
 	UrlEntity url_entity = UrlManager::getURLById(ps_url_id.trimmed());	
 	QString found_file = url_entity.filename_with_path;
-	if (!QFile::exists(found_file))
+    // if (!QFile::exists(found_file))
+    if (found_file.isEmpty())
     {
         return HttpResponse(ResponseStatus::NOT_FOUND, HttpUtils::detectErrorContentType(request.getHeaderByName("User-Agent")), EndpointManager::formatResponseMessage(request, "Processed sample file does not exist"));
 	}

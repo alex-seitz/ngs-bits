@@ -415,12 +415,12 @@ void RequestWorker::run()
                     if (get_object_outcome.IsSuccess()) {
                         Aws::IOStream& stream = get_object_outcome.GetResultWithOwnership().GetBody();
                         // std::size_t chunkSize = STREAM_CHUNK_SIZE;
-                        std::vector<char> buffer(regular_stream_chunk);
+                        std::vector<char> buffer(STREAM_CHUNK_SIZE);
 
                         while (stream.good())
                         {
 
-                            stream.read(buffer.data(), regular_stream_chunk);  // Read a chunk of data
+                            stream.read(buffer.data(), STREAM_CHUNK_SIZE);  // Read a chunk of data
                             std::streamsize bytesRead = stream.gcount();  // Get the actual number of bytes read
 
                             if (bytesRead > 0)
