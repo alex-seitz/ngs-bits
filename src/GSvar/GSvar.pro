@@ -13,6 +13,7 @@ SOURCES += main.cpp\
     Background/VariantAnnotator.cpp \
     CfDNAPanelBatchImport.cpp \
     DatabaseServiceRemote.cpp \
+    FileLocationWorker.cpp \
     GHGAUploadDialog.cpp \
     GlobalServiceProvider.cpp \
     IGVCommandWorker.cpp \
@@ -140,6 +141,7 @@ HEADERS += MainWindow.h \
     CfDNAPanelBatchImport.h \
     DatabaseServiceRemote.h \
     ExternalToolDialog.h \
+    FileLocationWorker.h \
     GHGAUploadDialog.h \
     GlobalServiceProvider.h \
     IGVCommandWorker.h \

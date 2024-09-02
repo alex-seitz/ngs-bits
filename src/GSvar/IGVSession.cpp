@@ -6,6 +6,7 @@
 #include "Settings.h"
 #include "GlobalServiceProvider.h"
 #include <QMessageBox>
+#include "FileLocationWorker.h"
 
 IGVSession::IGVSession(QWidget* parent, QString igv_name, QString igv_app, QString igv_host, int igv_port, QString genome)
 	: parent_(parent)
@@ -218,60 +219,83 @@ QColor IGVSession::statusToColor(IGVStatus status)
 
 QStringList IGVSession::initRegularIGV(bool& skip_init_for_session)
 {
-	MainWindow* main_window = GlobalServiceProvider::mainWindow();
+    QThreadPool execution_pool;
+    execution_pool.setMaxThreadCount(10);
+
+    MainWindow* main_window = GlobalServiceProvider::mainWindow();
 
     IgvDialog dlg(parent_);
 	AnalysisType analysis_type = main_window->getCurrentAnalysisType();
 
+    FileLocationWorker* file_location_bam_worker = new FileLocationWorker(dlg, PathType::BAM, analysis_type);
+    execution_pool.start(file_location_bam_worker);
+
     //sample BAM file(s)
-    FileLocationList bams = GlobalServiceProvider::fileLocationProvider().getBamFiles(true);
-    foreach(const FileLocation& file, bams)
-    {
-        dlg.addFile(file, true);
-    }
+    // FileLocationList bams = GlobalServiceProvider::fileLocationProvider().getBamFiles(true);
+    // foreach(const FileLocation& file, bams)
+    // {
+    //     dlg.addFile(file, true);
+    // }
 
     //sample BAF file(s)
-    FileLocationList bafs = GlobalServiceProvider::fileLocationProvider().getBafFiles(true);
-    foreach(const FileLocation& file, bafs)
-    {
-        if(analysis_type == SOMATIC_PAIR && !file.id.contains("somatic")) continue;
-        dlg.addFile(file, true);
-    }
+    FileLocationWorker* file_location_baf_worker = new FileLocationWorker(dlg, PathType::BAF, analysis_type);
+    execution_pool.start(file_location_baf_worker);
+
+    // FileLocationList bafs = GlobalServiceProvider::fileLocationProvider().getBafFiles(true);
+    // foreach(const FileLocation& file, bafs)
+    // {
+    //     if(analysis_type == SOMATIC_PAIR && !file.id.contains("somatic")) continue;
+    //     dlg.addFile(file, true);
+    // }
 
     //analysis VCF
-	FileLocation vcf = GlobalServiceProvider::fileLocationProvider().getAnalysisVcf();
-	bool igv_default_small = Settings::boolean("igv_default_small", true);
-	dlg.addFile(vcf, igv_default_small);
+    FileLocationWorker* file_location_vcf_worker = new FileLocationWorker(dlg, PathType::VCF, analysis_type);
+    execution_pool.start(file_location_vcf_worker);
+    // FileLocation vcf = GlobalServiceProvider::fileLocationProvider().getAnalysisVcf();
+    // bool igv_default_small = Settings::boolean("igv_default_small", true);
+    // dlg.addFile(vcf, igv_default_small);
 
     //analysis SV file
-	FileLocation bedpe = GlobalServiceProvider::fileLocationProvider().getAnalysisSvFile();
-	bool igv_default_sv = Settings::boolean("igv_default_sv", true);
-	dlg.addFile(bedpe, igv_default_sv);
+    FileLocationWorker* file_location_sv_worker = new FileLocationWorker(dlg, PathType::STRUCTURAL_VARIANTS, analysis_type);
+    execution_pool.start(file_location_sv_worker);
+    // FileLocation bedpe = GlobalServiceProvider::fileLocationProvider().getAnalysisSvFile();
+    // bool igv_default_sv = Settings::boolean("igv_default_sv", true);
+    // dlg.addFile(bedpe, igv_default_sv);
 
     //CNV files
-    if (analysis_type==SOMATIC_SINGLESAMPLE || analysis_type==SOMATIC_PAIR)
-    {
-        FileLocation file = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCoverageFile();
-        dlg.addFile(file, true);
+    FileLocationWorker* file_location_cnv_worker = new FileLocationWorker(dlg, PathType::CNV_RAW_DATA_CALL_REGIONS, analysis_type);
+    execution_pool.start(file_location_cnv_worker);
 
-        FileLocation file2 = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCallFile();
-        dlg.addFile(file2, true);
-    }
-    else
-    {
-        FileLocationList segs = GlobalServiceProvider::fileLocationProvider().getCnvCoverageFiles(true);
-        foreach(const FileLocation& file, segs)
-        {
-            dlg.addFile(file, true);
-        }
-    }
+    // if (analysis_type==SOMATIC_SINGLESAMPLE || analysis_type==SOMATIC_PAIR)
+    // {
+    //     FileLocation file = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCoverageFile();
+    //     dlg.addFile(file, true);
+
+    //     FileLocation file2 = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCallFile();
+    //     dlg.addFile(file2, true);
+    // }
+    // else
+    // {
+    //     FileLocationList segs = GlobalServiceProvider::fileLocationProvider().getCnvCoverageFiles(true);
+    //     foreach(const FileLocation& file, segs)
+    //     {
+    //         dlg.addFile(file, true);
+    //     }
+    // }
 
     //Manta evidence file(s)
-    FileLocationList evidence_files = GlobalServiceProvider::fileLocationProvider().getMantaEvidenceFiles(true);
-    foreach(const FileLocation& file, evidence_files)
-    {
-        dlg.addFile(file, false);
-    }
+    FileLocationWorker* file_location_manta_worker = new FileLocationWorker(dlg, PathType::MANTA_EVIDENCE, analysis_type);
+    execution_pool.start(file_location_manta_worker);
+    // FileLocationList evidence_files = GlobalServiceProvider::fileLocationProvider().getMantaEvidenceFiles(true);
+    // foreach(const FileLocation& file, evidence_files)
+    // {
+    //     dlg.addFile(file, false);
+    // }
+
+
+    // execution_pool.waitForDone();
+
+    // KEEP AS IS
 
     //target region
 	if (main_window->targetRegion().isValid())
