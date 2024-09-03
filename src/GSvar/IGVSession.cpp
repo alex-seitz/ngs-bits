@@ -20,6 +20,7 @@ IGVSession::IGVSession(QWidget* parent, QString igv_name, QString igv_app, QStri
 	igv_data_.genome_file = genome;
 
     execution_pool_.setMaxThreadCount(1);
+    location_execution_pool_.setMaxThreadCount(20);
 }
 
 const QString IGVSession::getName() const
@@ -219,81 +220,81 @@ QColor IGVSession::statusToColor(IGVStatus status)
 
 QStringList IGVSession::initRegularIGV(bool& skip_init_for_session)
 {
-    QThreadPool execution_pool;
-    execution_pool.setMaxThreadCount(10);
+
 
     MainWindow* main_window = GlobalServiceProvider::mainWindow();
 
     IgvDialog dlg(parent_);
 	AnalysisType analysis_type = main_window->getCurrentAnalysisType();
 
-    FileLocationWorker* file_location_bam_worker = new FileLocationWorker(dlg, PathType::BAM, analysis_type);
-    execution_pool.start(file_location_bam_worker);
-
-    //sample BAM file(s)
-    // FileLocationList bams = GlobalServiceProvider::fileLocationProvider().getBamFiles(true);
-    // foreach(const FileLocation& file, bams)
-    // {
-    //     dlg.addFile(file, true);
-    // }
+    FileLocationList bam_files;
+    FileLocationWorker* file_location_bam_worker = new FileLocationWorker(PathType::BAM, analysis_type, bam_files);
+    location_execution_pool_.start(file_location_bam_worker);
 
     //sample BAF file(s)
-    FileLocationWorker* file_location_baf_worker = new FileLocationWorker(dlg, PathType::BAF, analysis_type);
-    execution_pool.start(file_location_baf_worker);
-
-    // FileLocationList bafs = GlobalServiceProvider::fileLocationProvider().getBafFiles(true);
-    // foreach(const FileLocation& file, bafs)
-    // {
-    //     if(analysis_type == SOMATIC_PAIR && !file.id.contains("somatic")) continue;
-    //     dlg.addFile(file, true);
-    // }
+    FileLocationList baf_files;
+    FileLocationWorker* file_location_baf_worker = new FileLocationWorker(PathType::BAF, analysis_type, baf_files);
+    location_execution_pool_.start(file_location_baf_worker);
 
     //analysis VCF
-    FileLocationWorker* file_location_vcf_worker = new FileLocationWorker(dlg, PathType::VCF, analysis_type);
-    execution_pool.start(file_location_vcf_worker);
-    // FileLocation vcf = GlobalServiceProvider::fileLocationProvider().getAnalysisVcf();
-    // bool igv_default_small = Settings::boolean("igv_default_small", true);
-    // dlg.addFile(vcf, igv_default_small);
+    FileLocationList vcf_file;
+    FileLocationWorker* file_location_vcf_worker = new FileLocationWorker(PathType::VCF, analysis_type, vcf_file);
+    location_execution_pool_.start(file_location_vcf_worker);
 
     //analysis SV file
-    FileLocationWorker* file_location_sv_worker = new FileLocationWorker(dlg, PathType::STRUCTURAL_VARIANTS, analysis_type);
-    execution_pool.start(file_location_sv_worker);
-    // FileLocation bedpe = GlobalServiceProvider::fileLocationProvider().getAnalysisSvFile();
-    // bool igv_default_sv = Settings::boolean("igv_default_sv", true);
-    // dlg.addFile(bedpe, igv_default_sv);
+    FileLocationList bedpe_file;
+    FileLocationWorker* file_location_sv_worker = new FileLocationWorker(PathType::STRUCTURAL_VARIANTS, analysis_type, bedpe_file);
+    location_execution_pool_.start(file_location_sv_worker);
 
     //CNV files
-    FileLocationWorker* file_location_cnv_worker = new FileLocationWorker(dlg, PathType::CNV_RAW_DATA_CALL_REGIONS, analysis_type);
-    execution_pool.start(file_location_cnv_worker);
-
-    // if (analysis_type==SOMATIC_SINGLESAMPLE || analysis_type==SOMATIC_PAIR)
-    // {
-    //     FileLocation file = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCoverageFile();
-    //     dlg.addFile(file, true);
-
-    //     FileLocation file2 = GlobalServiceProvider::fileLocationProvider().getSomaticCnvCallFile();
-    //     dlg.addFile(file2, true);
-    // }
-    // else
-    // {
-    //     FileLocationList segs = GlobalServiceProvider::fileLocationProvider().getCnvCoverageFiles(true);
-    //     foreach(const FileLocation& file, segs)
-    //     {
-    //         dlg.addFile(file, true);
-    //     }
-    // }
+    FileLocationList cnv_files;
+    FileLocationWorker* file_location_cnv_worker = new FileLocationWorker(PathType::CNV_RAW_DATA_CALL_REGIONS, analysis_type, cnv_files);
+    location_execution_pool_.start(file_location_cnv_worker);
 
     //Manta evidence file(s)
-    FileLocationWorker* file_location_manta_worker = new FileLocationWorker(dlg, PathType::MANTA_EVIDENCE, analysis_type);
-    execution_pool.start(file_location_manta_worker);
-    // FileLocationList evidence_files = GlobalServiceProvider::fileLocationProvider().getMantaEvidenceFiles(true);
-    // foreach(const FileLocation& file, evidence_files)
-    // {
-    //     dlg.addFile(file, false);
-    // }
+    FileLocationList manta_evidence_files;
+    FileLocationWorker* file_location_manta_worker = new FileLocationWorker(PathType::MANTA_EVIDENCE, analysis_type, manta_evidence_files);
+    location_execution_pool_.start(file_location_manta_worker);
 
+    location_execution_pool_.waitForDone();
+    Log::info("BAM files count: " + QString::number(bam_files_.size()));
+    //sample BAM file(s)
+    foreach(const FileLocation& file, bam_files)
+    {
+        dlg.addFile(file, true);
+    }
+    // BAFs
+    foreach(const FileLocation& file, baf_files)
+    {
+        if(analysis_type == SOMATIC_PAIR && !file.id.contains("somatic")) continue;
+        dlg.addFile(file, true);
+    }
 
-    // execution_pool.waitForDone();
+    // VCFs
+    if (vcf_file.size()>0)
+    {
+        bool igv_default_small = Settings::boolean("igv_default_small", true);
+        dlg.addFile(vcf_file[0], igv_default_small);
+    }
+
+    // BEDPE
+    if (bedpe_file.size()>0)
+    {
+        bool igv_default_sv = Settings::boolean("igv_default_sv", true);
+        dlg.addFile(bedpe_file[0], igv_default_sv);
+    }
+
+    // CNVs
+    foreach(const FileLocation& file, cnv_files)
+    {
+        dlg.addFile(file, true);
+    }
+    // Manta evidence
+    foreach(const FileLocation& file, manta_evidence_files)
+    {
+        dlg.addFile(file, false);
+    }
+
 
     // KEEP AS IS
 
@@ -532,4 +533,40 @@ void IGVSession::updateHistoryFailed(int id, QString error, double sec_elapsed)
 	emit historyUpdated(igv_data_.name, command_history_);
 
 	command_history_mutex_.unlock();
+}
+
+void IGVSession::addBamFiles(FileLocationList bam_files)
+{
+    Log::info("addBamFiles");
+    bam_files_ = bam_files;
+}
+
+void IGVSession::addBafFiles(FileLocationList baf_files)
+{
+    Log::info("addBafFiles");
+    baf_files_ = baf_files;
+}
+
+void IGVSession::addVcfFile(FileLocation vcf_file)
+{
+    Log::info("addVcfFile");
+    vcf_file_ = vcf_file;
+}
+
+void IGVSession::addBedpeFile(FileLocation bedpe_file)
+{
+    Log::info("addBedpeFile");
+    bedpe_file_ = bedpe_file;
+}
+
+void IGVSession::addCnvFiles(FileLocationList cnv_files)
+{
+    Log::info("addCnvFiles");
+    cnv_files_ = cnv_files;
+}
+
+void IGVSession::addMantaEvidenceFiles(FileLocationList manta_evidence_files)
+{
+    Log::info("addMantaEvidenceFiles");
+    manta_evidence_files_ = manta_evidence_files;
 }

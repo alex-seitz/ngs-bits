@@ -91,14 +91,33 @@ signals:
     void started();
     void finished();
 
+
+public slots:
+    void addBamFiles(FileLocationList bam_files);
+    void addBafFiles(FileLocationList baf_files);
+    void addVcfFile(FileLocation vcf_file);
+    void addBedpeFile(FileLocation bedpe_file);
+    void addCnvFiles(FileLocationList cnv_files);
+    void addMantaEvidenceFiles(FileLocationList manta_evidence_files);
+
 private slots:
 	void updateHistoryStart(int id);
 	void updateHistoryFinished(int id, QString answer, double sec_elapsed);
 	void updateHistoryFailed(int id, QString error, double sec_elapsed);
 
+
+
 private:
 	QWidget* parent_;
     QThreadPool execution_pool_;
+    QThreadPool location_execution_pool_;
+
+    FileLocationList bam_files_;
+    FileLocationList baf_files_;
+    FileLocation vcf_file_;
+    FileLocation bedpe_file_;
+    FileLocationList cnv_files_;
+    FileLocationList manta_evidence_files_;
 
 	IGVData igv_data_;
 	bool is_initialized_;
